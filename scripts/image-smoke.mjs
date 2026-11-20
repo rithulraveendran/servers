@@ -595,7 +595,8 @@ export async function main(argv = process.argv.slice(2), deps = {}) {
       deps.changes ?? (() => changesSince(resolveBase(opts.base))),
     );
   } catch (err) {
-    console.error(`image-smoke — ${err.message}`);
+    const cause = err?.cause ? `\n${err.cause.message}` : "";
+    console.error(`image-smoke — ${err.message}${cause}`);
     return 1;
   }
   for (const s of selected)

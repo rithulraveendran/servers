@@ -16,6 +16,7 @@ import {
   main,
   parseArgs,
   renderReport,
+  resolveBase,
   startCommand,
 } from "./interface-diff.mjs";
 import { SERVERS } from "./lib/interface-diff-servers.mjs";
@@ -123,6 +124,32 @@ test("main exits 2 on a bad command line, before building anything", async (t) =
   const error = t.mock.method(console, "error", () => {});
   assert.equal(await main(["--nope"]), 2);
   assert.match(String(error.mock.calls[0]?.arguments[0]), /unknown argument/);
+});
+
+test("resolveBase preserves the underlying git error as cause when the default base fails", () => {
+  assert.throws(
+    () => resolveBase(null),
+    (err) => {
+      assert.match(
+        err.message,
+        /is not available to compare against\. Run `git fetch origin v2\/main`/,
+      );
+      assert.ok(err.cause instanceof Error);
+      assert.match(
+        err.cause.message,
+        /git rev-parse --verify origin\/v2\/main/,
+      );
+      return true;
+    },
+  );
+});
+
+test("main prints the cause message when resolveBase fails", async (t) => {
+  const error = t.mock.method(console, "error", () => {});
+  assert.equal(await main([]), 1);
+  const logged = error.mock.calls.map((c) => String(c.arguments[0])).join("\n");
+  assert.match(logged, /is not available to compare against/);
+  assert.match(logged, /git rev-parse --verify origin\/v2\/main/);
 });
 
 test("an identical interface is unchanged", () => {

@@ -333,9 +333,10 @@ export function resolveBase(base) {
   if (base) return git("rev-parse", "--verify", `${base}^{commit}`);
   try {
     git("rev-parse", "--verify", DEFAULT_BASE_BRANCH);
-  } catch {
+  } catch (error) {
     throw new Error(
       `${DEFAULT_BASE_BRANCH} is not available to compare against. Run \`git fetch origin v2/main\`, or name a base with --base <ref>.`,
+      { cause: error },
     );
   }
   return git("merge-base", "HEAD", DEFAULT_BASE_BRANCH);
@@ -548,7 +549,8 @@ export async function main(argv = process.argv.slice(2)) {
   } catch (err) {
     // Nothing is known about which servers to diff, so there is no report to
     // write: the job log carries the reason.
-    console.error(`interface-diff: ${err.message}`);
+    const cause = err?.cause ? `\n${err.cause.message}` : "";
+    console.error(`interface-diff: ${err.message}${cause}`);
     return 1;
   }
   for (const s of selected)
